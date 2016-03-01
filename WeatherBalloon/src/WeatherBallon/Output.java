@@ -7,6 +7,7 @@ package WeatherBallon;
 
 import java.awt.Toolkit;
 
+
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
@@ -14,28 +15,20 @@ import gnu.io.SerialPortEventListener;
 import java.awt.Desktop;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
+
 
 
 /**
@@ -162,38 +155,7 @@ public class Output extends javax.swing.JFrame implements SerialPortEventListene
   openWebpage("http://localhost:8080/Weather_Balloon_Website/");
      
      
-        /*
-    try{
-        
-        
-    String query = "name=yourname&email=youremail@yourserver.com";
-    
-
-    URLConnection uc = new URL("http://localhost:8080/Weather_Balloon_Website/").openConnection();
-    uc.setDoOutput(true);
-    uc.setDoInput(true);
-    uc.setAllowUserInteraction(false);
-    DataOutputStream dos = new DataOutputStream(uc.getOutputStream());
-
-    // The POST line, the Accept line, and
-    // the content-type headers are sent by the URLConnection.
-    // We just need to send the data
-    dos.writeBytes(query);
-    dos.close();
-
-    // Read the response
-    DataInputStream dis = new DataInputStream(uc.getInputStream());
-    String nextline;
-    while ((nextline = dis.readLine()) != null) {
-      System.out.println(nextline);
-    }
-    dis.close();
-    
-  } catch (Exception e) {
-        System.err.println(e.toString());
-    }
-    */
-          
+       
     
     }//GEN-LAST:event_jButton2ActionPerformed
 
@@ -314,13 +276,7 @@ public static void openWebpage(String urlString) {
         String inputLine=null;
         
         if (input.ready()) {
-            
-           // inputLine = input.readLine()+"kml";
-        
-           // inputLine = inputLine.substring(inputLine.indexOf("$")+1);
-          //  inputLine = inputLine +"xjskaxnaslk";
-           // redirectSystemStreams();
-           // System.out.println(inputLine);
+   
         }
 
     } catch (Exception e) {
