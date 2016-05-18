@@ -7,7 +7,7 @@
   database.store("storedGraphData");
   //uncomment to empty the storedGraphTable
   //database().remove();
-  //inserts the data into the storedGraphData table
+  //inserts the data and the data's name into the storedGraphData table
   database.insert({data:array,name:name}); 
  }
    

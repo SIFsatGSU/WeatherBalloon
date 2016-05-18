@@ -5,7 +5,7 @@ database.store("Login");
 
 //This method add a new instructors username and password combination into the database.
 function addInstructor(username,password,userID,passwordID){
-//checks if any required inputs are empty, and alerts the user is so
+//checks if any required inputs are empty, and alerts the user if so
 if(username === "" || password === ""){
     alert("You are missing a required field");
 }

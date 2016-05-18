@@ -16,6 +16,7 @@ Description: A two-column, fixed-width design for blogs and small websites.
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head> 
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <script type="text/javascript" src="d3.js"></script>
 <script type="text/javascript" src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script type="text/javascript" src="d3.min.js"></script>
@@ -23,13 +24,12 @@ Description: A two-column, fixed-width design for blogs and small websites.
 <script type="text/javascript" src="taffy.js"></script>
 <script type="text/javascript" src="store_printData.js"></script>
 <script type="text/javascript" src="saveSvgAsPng.js"></script>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link href="default.css" rel="stylesheet" type="text/css" media="screen" />
 <link rel="stylesheet" href="d3-master/lib/colorbrewer/colorbrewer.css" type="text/css"/>
 <style type="text/css">
 
 path { 
-  stroke: steelblue;
+  stroke:  #009999;
   stroke-width: 2;
   fill: none;
 }
@@ -70,7 +70,7 @@ path {
 	<!-- start content -->
 	<div id="content">
             <div class="title">
-		<h2>Welcome GSU geoscience students!</h2>
+		<h2>Welcome GSU Geoscience students!</h2>
 	    </div>
                 <br/><br/>
 		<div class="entry">
@@ -132,10 +132,10 @@ path {
     document.getElementById(buttonID).style.display="none";      
  }
  
- //saves a .gif file for the associated graphical image to the users computer
+ //saves a .jpeg file for the associated graphical image to the users computer
  function saveClick(svgID,name){
      //uses the saveSvgAsPng javascript file to perform the saving function 
-    saveSvgAsPng(document.getElementById(svgID), name+".gif", {backgroundColor: "white"});
+    saveSvgAsPng(document.getElementById(svgID), name+".jpeg", {backgroundColor: "white"});
  }
 
     //This method creates the temperature vs time graph for each data entry
@@ -196,23 +196,28 @@ var	margin = {top: 30, right: 20, bottom: 30, left: 50},
 	width = 600 - margin.left - margin.right,
 	height = 270 - margin.top - margin.bottom;
  
-// Set the ranges
-var	x = d3.scale.linear().range([0, width]);
-var	y = d3.scale.linear().range([height, 0]);
- 
-// Define the axes
-var	xAxis = d3.svg.axis().scale(x)
-	.orient("bottom");
- 
-var	yAxis = d3.svg.axis().scale(y)
-	.orient("left");
+        // Set the ranges
+	var xScale = d3.scale.linear()
+		.range([0, width]);
+		
+	var yScale = d3.scale.linear()
+		.range([height, 0]);
+	
+        // Define the axes
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.orient("bottom");
+		
+	var yAxis = d3.svg.axis()
+		.scale(yScale)
+		.orient("left");
  
 // Define the line
 var	valueline = d3.svg.line()
-        .defined(function(d) { return d.Time!==0; })
+        .defined(function(d) { return d.Altitude!==0; })
         .defined(function(d) { return d.Temperature!==0; })
-	.x(function(d) { return x(d.Time); })
-	.y(function(d) { return y(d.Temperature); });
+	.x(function(d) { return xScale(d.Altitude); })
+	.y(function(d) { return yScale(d.Temperature); });
     
 // Adds the svg canvas
 var svgID = "svgCount"+k;
@@ -227,13 +232,18 @@ var	svg = d3.select("#"+divID)
 	.append("g")
 		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
  
+ 
 // Get the data
 d3.csv(file, function(error, data) {
+      // extract the x labels for the axis and scale domain
+		xLabels = data.map(function (d) { return d['Altitude']; });
+		xScale.domain(xLabels);
+		yScale.domain([0, Math.round(d3.max(data, function(d) { return parseFloat(d['Temperature']); }))]);
+                
 	data.forEach(function(d) {
       
-		d.Time = +d.Time;
+		d.Altitude = +d.Altitude;
 		d.Temperature = +d.Temperature;
-           
 	});
 
 //Checks to see if the supplied data entry is good or bad data
@@ -248,7 +258,7 @@ d3.csv(file, function(error, data) {
           count++;
       }
   }
-  //if none of the correvt variables are present, the method will return true. Meaning the data is bad
+  //if none of the correct variables are present, the method will return true. Meaning the data is bad
   if(count === arr.length){
       val =true;  
   }
@@ -256,22 +266,73 @@ d3.csv(file, function(error, data) {
 }
 
 	// Scale the range of the data
-	x.domain([d3.min(data, function(d) { return d.Time; })-1,d3.max(data, function(d) { return d.Time; })+1]);
-	y.domain([d3.min(data, function(d) { return d.Temperature; })-1,d3.max(data, function(d) { return d.Temperature; })+1]);
- 
-	// Add the valueline path.
-	svg.append("path")	
-		.attr("class", "line")
-		.attr("d", valueline(data));
+	xScale.domain([d3.min(data, function(d) { return d.Altitude; })-1,d3.max(data, function(d) { return d.Altitude; })+1]);
+	yScale.domain([d3.min(data, function(d) { return d.Temperature; })-1,d3.max(data, function(d) { return d.Temperature; })+1]);
+        
+                // get the x and y values for least squares
+		var xSeries = d3.range(1, xLabels.length + 1);
+		var ySeries = data.map(function(d) { return parseFloat(d['Temperature']); });
+		
+		var leastSquaresCoeff = leastSquares(xSeries, ySeries);
+		
+		// apply the reults of the least squares regression
+		var x1 = xLabels[0];
+		var y1 = leastSquaresCoeff[0] + leastSquaresCoeff[1];
+		var x2 = xLabels[xLabels.length - 1];
+		var y2 = leastSquaresCoeff[0] * xSeries.length + leastSquaresCoeff[1];
+		var trendData = [[x1,y1,x2,y2]];
+		
+		var trendline = svg.selectAll(".trendline")
+			.data(trendData);
+			
+		trendline.enter()
+			.append("line")
+			.attr("class", "trendline")
+			.attr("x1", function(d) { return xScale(d[0]); })
+			.attr("y1", function(d) { return yScale(d[1]); })
+			.attr("x2", function(d) { return xScale(d[2]); })
+			.attr("y2", function(d) { return yScale(d[3]); })
+			.attr("stroke", "black")
+			.attr("stroke-width", 1);
+
+                
+                // returns slope, intercept and r-square of the line
+                function leastSquares(xSeries, ySeries) {
+		var reduceSumFunc = function(prev, cur) { return prev + cur; };
+		
+		var xBar = xSeries.reduce(reduceSumFunc) * 1.0 / xSeries.length;
+		var yBar = ySeries.reduce(reduceSumFunc) * 1.0 / ySeries.length;
+
+		var ssXX = xSeries.map(function(d) { return Math.pow(d - xBar, 2); })
+			.reduce(reduceSumFunc);
+		
+		var ssYY = ySeries.map(function(d) { return Math.pow(d - yBar, 2); })
+			.reduce(reduceSumFunc);
+			
+		var ssXY = xSeries.map(function(d, i) { return (d - xBar) * (ySeries[i] - yBar); })
+			.reduce(reduceSumFunc);
+			
+		var slope = ssXY / ssXX;
+		var intercept = yBar - (xBar * slope);
+		var rSquare = Math.pow(ssXY, 2) / (ssXX * ssYY);
+		
+		return [slope, intercept, rSquare];
+	}
         
           // Add the scatterplot
     svg.selectAll("dot")
-        .data(data.filter(function(d) { return d.Time !== 0; }).filter(function(d) { return d.Temperature !== 0; }))
+        .data(data.filter(function(d) { return d.Altitude !== 0; }).filter(function(d) { return d.Temperature !== 0; }))
         .enter().append("circle")
-        .attr("r", 0.5)
-        .attr("cx", function(d) { return x(d.Time); })
-        .attr("cy", function(d) { return y(d.Temperature); });
+        .attr("r", 1.5)
+        .attr("cx", function(d) { return xScale(d.Altitude); })
+        .attr("cy", function(d) { return yScale(d.Temperature); });
 
+	//draw the line
+       svg.append("path")
+		.datum(data)
+		.attr("class","line")
+		.attr("d", valueline);
+        
 	// Add the X Axis
 	svg.append("g")		
 		.attr("class", "x axis")
@@ -298,7 +359,7 @@ d3.csv(file, function(error, data) {
     .attr("text-anchor", "end")
     .attr("x", width)
     .attr("y", height - 6)
-    .text("Time (s)");
+    .text("Altitude (m)");
 
     //adds the graphs title
    svg.append("text")
@@ -307,7 +368,7 @@ d3.csv(file, function(error, data) {
     .attr("text-anchor", "middle")  
     .style("font-size", "16px") 
     .style("text-decoration", "underline")  
-    .text("Temperature vs Time Graph");
+    .text("Temperature vs Altitude Graph");
  
  //alerts the user id the data is bad and removes that entry from the database
 if(checkValue === true){
@@ -325,7 +386,7 @@ if(checkValue === true){
             elementSave.setAttribute("class","button");
             elementSave.setAttribute("value","Save Image");
             elementSave.setAttribute("style","width: 90px;");
-            elementSave.setAttribute("onclick",'saveClick("'+svgID+'","'+fileName+': Temperature vs Time")');
+            elementSave.setAttribute("onclick",'saveClick("'+svgID+'","'+fileName+': Temperature vs Altitude")');
             divElement.appendChild(elementSave);
         }
         j++;
@@ -343,23 +404,28 @@ var	margin = {top: 30, right: 20, bottom: 30, left: 50},
 	width = 600 - margin.left - margin.right,
 	height = 270 - margin.top - margin.bottom;
  
-// Set the ranges
-var	x = d3.scale.linear().range([0, width]);
-var	y = d3.scale.linear().range([height, 0]);
- 
-// Define the axes
-var	xAxis = d3.svg.axis().scale(x)
-	.orient("bottom");
- 
-var	yAxis = d3.svg.axis().scale(y)
-	.orient("left");
+        // Set the ranges
+	var xScale = d3.scale.linear()
+		.range([0, width]);
+		
+	var yScale = d3.scale.linear()
+		.range([height, 0]);
+	
+        // Define the axes
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.orient("bottom");
+		
+	var yAxis = d3.svg.axis()
+		.scale(yScale)
+		.orient("left");
  
 // Define the line
 var	valueline = d3.svg.line()
-        .defined(function(d) { return d.Time!==0; })
+        .defined(function(d) { return d.Altitude!==0; })
         .defined(function(d) { return d.Pressure!==0; })
-	.x(function(d) { return x(d.Time); })
-	.y(function(d) { return y(d.Pressure); });
+	.x(function(d) { return xScale(d.Altitude); })
+	.y(function(d) { return yScale(d.Pressure); });
     
 // Adds the svg canvas
 var svgID = "svgCount"+k;
@@ -375,29 +441,88 @@ var	svg = d3.select("#"+divID)
  
 // Get the data
 d3.csv(file, function(error, data) {
+    
+    // extract the x labels for the axis and scale domain
+		xLabels = data.map(function (d) { return d['Altitude']; });
+		xScale.domain(xLabels);
+		yScale.domain([0, Math.round(d3.max(data, function(d) { return parseFloat(d['Pressure']); }))]);
+                
 	data.forEach(function(d) {
        
-		d.Time = +d.Time;
+		d.Altitude = +d.Altitude;
 		d.Pressure = +d.Pressure;
            
 	});
 
 	// Scale the range of the data
-	x.domain([d3.min(data, function(d) { return d.Time; })-1,d3.max(data, function(d) { return d.Time; })+1]);
-	y.domain([d3.min(data, function(d) { return d.Pressure; })-1,d3.max(data, function(d) { return d.Pressure; })+1]);
+	xScale.domain([d3.min(data, function(d) { return d.Altitude; })-1,d3.max(data, function(d) { return d.Altitude; })+1]);
+	yScale.domain([d3.min(data, function(d) { return d.Pressure; })-1,d3.max(data, function(d) { return d.Pressure; })+1]);
  
-	// Add the valueline path.
-	svg.append("path")	
-		.attr("class", "line")
-		.attr("d", valueline(data));
+        
+               // get the x and y values for least squares
+		var xSeries = d3.range(1, xLabels.length + 1);
+		var ySeries = data.map(function(d) { return parseFloat(d['Pressure']); });
+		
+		var leastSquaresCoeff = leastSquares(xSeries, ySeries);
+		
+		// apply the reults of the least squares regression
+		var x1 = xLabels[0];
+		var y1 = leastSquaresCoeff[0] + leastSquaresCoeff[1];
+		var x2 = xLabels[xLabels.length - 1];
+		var y2 = leastSquaresCoeff[0] * xSeries.length + leastSquaresCoeff[1];
+		var trendData = [[x1,y1,x2,y2]];
+		
+		var trendline = svg.selectAll(".trendline")
+			.data(trendData);
+			
+		trendline.enter()
+			.append("line")
+			.attr("class", "trendline")
+			.attr("x1", function(d) { return xScale(d[0]); })
+			.attr("y1", function(d) { return yScale(d[1]); })
+			.attr("x2", function(d) { return xScale(d[2]); })
+			.attr("y2", function(d) { return yScale(d[3]); })
+			.attr("stroke", "black")
+			.attr("stroke-width", 1);
+
+                
+              	// returns slope, intercept and r-square of the line
+	        function leastSquares(xSeries, ySeries) {
+		var reduceSumFunc = function(prev, cur) { return prev + cur; };
+		
+		var xBar = xSeries.reduce(reduceSumFunc) * 1.0 / xSeries.length;
+		var yBar = ySeries.reduce(reduceSumFunc) * 1.0 / ySeries.length;
+
+		var ssXX = xSeries.map(function(d) { return Math.pow(d - xBar, 2); })
+			.reduce(reduceSumFunc);
+		
+		var ssYY = ySeries.map(function(d) { return Math.pow(d - yBar, 2); })
+			.reduce(reduceSumFunc);
+			
+		var ssXY = xSeries.map(function(d, i) { return (d - xBar) * (ySeries[i] - yBar); })
+			.reduce(reduceSumFunc);
+			
+		var slope = ssXY / ssXX;
+		var intercept = yBar - (xBar * slope);
+		var rSquare = Math.pow(ssXY, 2) / (ssXX * ssYY);
+		
+		return [slope, intercept, rSquare];
+	}
+        
         
           // Add the scatterplot
     svg.selectAll("dot")
-        .data(data.filter(function(d) { return d.Time !== 0; }).filter(function(d) { return d.Pressure !== 0; }))
+        .data(data.filter(function(d) { return d.Altitude !== 0; }).filter(function(d) { return d.Pressure !== 0; }))
         .enter().append("circle")
-        .attr("r", 0.5)
-        .attr("cx", function(d) { return x(d.Time); })
-        .attr("cy", function(d) { return y(d.Pressure); });
+        .attr("r", 1.5)
+        .attr("cx", function(d) { return xScale(d.Altitude); })
+        .attr("cy", function(d) { return yScale(d.Pressure); });
+
+            //draw the line
+       svg.append("path")
+		.datum(data)
+		.attr("class","line")
+		.attr("d", valueline);
 
 	// Add the X Axis
 	svg.append("g")		
@@ -425,7 +550,7 @@ d3.csv(file, function(error, data) {
     .attr("text-anchor", "end")
     .attr("x", width)
     .attr("y", height - 6)
-    .text("Time (s)");
+    .text("Altitude (m)");
 
     //adds the graphs title
    svg.append("text")
@@ -434,7 +559,7 @@ d3.csv(file, function(error, data) {
     .attr("text-anchor", "middle")  
     .style("font-size", "16px") 
     .style("text-decoration", "underline")  
-    .text("Pressure vs Time Graph");
+    .text("Pressure vs Altitude Graph");
 
 });
 
@@ -447,7 +572,7 @@ d3.csv(file, function(error, data) {
             elementSave.setAttribute("class","button");
             elementSave.setAttribute("value","Save Image");
             elementSave.setAttribute("style","width: 90px;");
-            elementSave.setAttribute("onclick",'saveClick("'+svgID+'","'+fileName+': Pressure vs Time")');
+            elementSave.setAttribute("onclick",'saveClick("'+svgID+'","'+fileName+': Pressure vs Altitude")');
             divElement.appendChild(elementSave);
         }
         j++;
@@ -465,23 +590,28 @@ var	margin = {top: 30, right: 20, bottom: 30, left: 50},
 	width = 600 - margin.left - margin.right,
 	height = 270 - margin.top - margin.bottom;
  
-// Set the ranges
-var	x = d3.scale.linear().range([0, width]);
-var	y = d3.scale.linear().range([height, 0]);
- 
-// Define the axes
-var	xAxis = d3.svg.axis().scale(x)
-	.orient("bottom");
- 
-var	yAxis = d3.svg.axis().scale(y)
-	.orient("left");
+        // Set the ranges
+	var xScale = d3.scale.linear()
+		.range([0, width]);
+		
+	var yScale = d3.scale.linear()
+		.range([height, 0]);
+	
+        // Define the axes
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.orient("bottom");
+		
+	var yAxis = d3.svg.axis()
+		.scale(yScale)
+		.orient("left");
  
 // Define the line
 var	valueline = d3.svg.line()
-        .defined(function(d) { return d.Time!==0; })
+        .defined(function(d) { return d.Altitude!==0; })
         .defined(function(d) { return d.Humidity!==0; })
-	.x(function(d) { return x(d.Time); })
-	.y(function(d) { return y(d.Humidity); });
+	.x(function(d) { return xScale(d.Altitude); })
+	.y(function(d) { return yScale(d.Humidity); });
     
 // Adds the svg canvas
 var svgID = "svgCount"+k;
@@ -497,29 +627,86 @@ var	svg = d3.select("#"+divid)
  
 // Get the data
 d3.csv(file, function(error, data) {
+        // extract the x labels for the axis and scale domain
+		xLabels = data.map(function (d) { return d['Altitude']; });
+		xScale.domain(xLabels);
+		yScale.domain([0, Math.round(d3.max(data, function(d) { return parseFloat(d['Humidity']); }))]);
+    
 	data.forEach(function(d) {
        
-		d.Time = +d.Time;
+		d.Altitude = +d.Altitude;
 		d.Humidity = +d.Humidity;
            
 	});
 
 	// Scale the range of the data
-	x.domain([d3.min(data, function(d) { return d.Time; })-1,d3.max(data, function(d) { return d.Time; })+1]);
-	y.domain([d3.min(data, function(d) { return d.Humidity; })-1,d3.max(data, function(d) { return d.Humidity; })+1]);
+	xScale.domain([d3.min(data, function(d) { return d.Altitude; })-1,d3.max(data, function(d) { return d.Altitude; })+1]);
+	yScale.domain([d3.min(data, function(d) { return d.Humidity; })-1,d3.max(data, function(d) { return d.Humidity; })+1]);
  
-	// Add the valueline path.
-	svg.append("path")	
-		.attr("class", "line")
-		.attr("d", valueline(data));
+                // get the x and y values for least squares
+		var xSeries = d3.range(1, xLabels.length + 1);
+		var ySeries = data.map(function(d) { return parseFloat(d['Humidity']); });
+		
+		var leastSquaresCoeff = leastSquares(xSeries, ySeries);
+		
+		// apply the reults of the least squares regression
+		var x1 = xLabels[0];
+		var y1 = leastSquaresCoeff[0] + leastSquaresCoeff[1];
+		var x2 = xLabels[xLabels.length - 1];
+		var y2 = leastSquaresCoeff[0] * xSeries.length + leastSquaresCoeff[1];
+		var trendData = [[x1,y1,x2,y2]];
+		
+		var trendline = svg.selectAll(".trendline")
+			.data(trendData);
+			
+		trendline.enter()
+			.append("line")
+			.attr("class", "trendline")
+			.attr("x1", function(d) { return xScale(d[0]); })
+			.attr("y1", function(d) { return yScale(d[1]); })
+			.attr("x2", function(d) { return xScale(d[2]); })
+			.attr("y2", function(d) { return yScale(d[3]); })
+			.attr("stroke", "black")
+			.attr("stroke-width", 1);
+
+                
+               // returns slope, intercept and r-square of the line
+	        function leastSquares(xSeries, ySeries) {
+		var reduceSumFunc = function(prev, cur) { return prev + cur; };
+		
+		var xBar = xSeries.reduce(reduceSumFunc) * 1.0 / xSeries.length;
+		var yBar = ySeries.reduce(reduceSumFunc) * 1.0 / ySeries.length;
+
+		var ssXX = xSeries.map(function(d) { return Math.pow(d - xBar, 2); })
+			.reduce(reduceSumFunc);
+		
+		var ssYY = ySeries.map(function(d) { return Math.pow(d - yBar, 2); })
+			.reduce(reduceSumFunc);
+			
+		var ssXY = xSeries.map(function(d, i) { return (d - xBar) * (ySeries[i] - yBar); })
+			.reduce(reduceSumFunc);
+			
+		var slope = ssXY / ssXX;
+		var intercept = yBar - (xBar * slope);
+		var rSquare = Math.pow(ssXY, 2) / (ssXX * ssYY);
+		
+		return [slope, intercept, rSquare];
+	}
+        
         
           // Add the scatterplot
     svg.selectAll("dot")
-        .data(data.filter(function(d) { return d.Time !== 0; }).filter(function(d) { return d.Humidity !== 0; }))
+        .data(data.filter(function(d) { return d.Altitude !== 0; }).filter(function(d) { return d.Humidity !== 0; }))
         .enter().append("circle")
-        .attr("r", 0.5)
-        .attr("cx", function(d) { return x(d.Time); })
-        .attr("cy", function(d) { return y(d.Humidity); });
+        .attr("r", 1.5)
+        .attr("cx", function(d) { return xScale(d.Altitude); })
+        .attr("cy", function(d) { return yScale(d.Humidity); });
+
+       //draw the line
+       svg.append("path")
+		.datum(data)
+		.attr("class","line")
+		.attr("d", valueline);
 
 	// Add the X Axis
 	svg.append("g")		
@@ -547,7 +734,7 @@ d3.csv(file, function(error, data) {
     .attr("text-anchor", "end")
     .attr("x", width)
     .attr("y", height - 6)
-    .text("Time (s)");
+    .text("Altitude (m)");
 
    //adds the graphs title
    svg.append("text")
@@ -556,7 +743,7 @@ d3.csv(file, function(error, data) {
     .attr("text-anchor", "middle")  
     .style("font-size", "16px") 
     .style("text-decoration", "underline")  
-    .text("Humidity vs Time Graph");
+    .text("Humidity vs Altitude Graph");
 
 });
 
@@ -569,7 +756,7 @@ d3.csv(file, function(error, data) {
             elementSave.setAttribute("class","button");
             elementSave.setAttribute("value","Save Image");
             elementSave.setAttribute("style","width: 90px;");
-            elementSave.setAttribute("onclick",'saveClick("'+svgID+'","'+fileName+': Humidity vs Time")');
+            elementSave.setAttribute("onclick",'saveClick("'+svgID+'","'+fileName+': Humidity vs Altitude")');
             divElement.appendChild(elementSave);
         }
         j++;
@@ -587,23 +774,28 @@ var	margin = {top: 30, right: 20, bottom: 30, left: 50},
 	width = 600 - margin.left - margin.right,
 	height = 270 - margin.top - margin.bottom;
  
-// Set the ranges
-var	x = d3.scale.linear().range([0, width]);
-var	y = d3.scale.linear().range([height, 0]);
- 
-// Define the axes
-var	xAxis = d3.svg.axis().scale(x)
-	.orient("bottom");
- 
-var	yAxis = d3.svg.axis().scale(y)
-	.orient("left");
+        // Set the ranges
+	var xScale = d3.scale.linear()
+		.range([0, width]);
+		
+	var yScale = d3.scale.linear()
+		.range([height, 0]);
+	
+        // Define the axes
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.orient("bottom");
+		
+	var yAxis = d3.svg.axis()
+		.scale(yScale)
+		.orient("left");
  
 // Define the line
 var	valueline = d3.svg.line()
         .defined(function(d) { return d.Time!==0; })
         .defined(function(d) { return d.Altitude !==0; })
-	.x(function(d) { return x(d.Time); })
-	.y(function(d) { return y(d.Altitude); });
+	.x(function(d) { return xScale(d.Time); })
+	.y(function(d) { return yScale(d.Altitude); });
     
 // Adds the svg canvas
 var svgID = "svgCount"+k;
@@ -619,6 +811,11 @@ var	svg = d3.select("#"+divid)
  
 // Get the data
 d3.csv(file, function(error, data) {
+            // extract the x labels for the axis and scale domain
+		xLabels = data.map(function (d) { return d['Time']; });
+		xScale.domain(xLabels);
+		yScale.domain([0, Math.round(d3.max(data, function(d) { return parseFloat(d['Altitude']); }))]);
+    
 	data.forEach(function(d) {
        
 		d.Time = +d.Time;
@@ -627,21 +824,73 @@ d3.csv(file, function(error, data) {
 	});
 
 	// Scale the range of the data
-	x.domain([d3.min(data, function(d) { return d.Time; })-1,d3.max(data, function(d) { return d.Time; })+1]);
-	y.domain([d3.min(data, function(d) { return d.Altitude; })-1,d3.max(data, function(d) { return d.Altitude; })+1]);
- 
-	// Add the valueline path.
-	svg.append("path")	
-		.attr("class", "line")
-		.attr("d", valueline(data));
+	xScale.domain([d3.min(data, function(d) { return d.Time; })-1,d3.max(data, function(d) { return d.Time; })+1]);
+	yScale.domain([d3.min(data, function(d) { return d.Altitude; })-1,d3.max(data, function(d) { return d.Altitude; })+1]);
+
+                // get the x and y values for least squares
+		var xSeries = d3.range(1, xLabels.length + 1);
+		var ySeries = data.map(function(d) { return parseFloat(d['Altitude']); });
+		
+		var leastSquaresCoeff = leastSquares(xSeries, ySeries);
+		
+		// apply the reults of the least squares regression
+		var x1 = xLabels[0];
+		var y1 = leastSquaresCoeff[0] + leastSquaresCoeff[1];
+		var x2 = xLabels[xLabels.length - 1];
+		var y2 = leastSquaresCoeff[0] * xSeries.length + leastSquaresCoeff[1];
+		var trendData = [[x1,y1,x2,y2]];
+		
+		var trendline = svg.selectAll(".trendline")
+			.data(trendData);
+			
+		trendline.enter()
+			.append("line")
+			.attr("class", "trendline")
+			.attr("x1", function(d) { return xScale(d[0]); })
+			.attr("y1", function(d) { return yScale(d[1]); })
+			.attr("x2", function(d) { return xScale(d[2]); })
+			.attr("y2", function(d) { return yScale(d[3]); })
+			.attr("stroke", "black")
+			.attr("stroke-width", 1);
+
+                
+               // returns slope, intercept and r-square of the line
+	        function leastSquares(xSeries, ySeries) {
+		var reduceSumFunc = function(prev, cur) { return prev + cur; };
+		
+		var xBar = xSeries.reduce(reduceSumFunc) * 1.0 / xSeries.length;
+		var yBar = ySeries.reduce(reduceSumFunc) * 1.0 / ySeries.length;
+
+		var ssXX = xSeries.map(function(d) { return Math.pow(d - xBar, 2); })
+			.reduce(reduceSumFunc);
+		
+		var ssYY = ySeries.map(function(d) { return Math.pow(d - yBar, 2); })
+			.reduce(reduceSumFunc);
+			
+		var ssXY = xSeries.map(function(d, i) { return (d - xBar) * (ySeries[i] - yBar); })
+			.reduce(reduceSumFunc);
+			
+		var slope = ssXY / ssXX;
+		var intercept = yBar - (xBar * slope);
+		var rSquare = Math.pow(ssXY, 2) / (ssXX * ssYY);
+		
+		return [slope, intercept, rSquare];
+	}
+        
         
           // Add the scatterplot
     svg.selectAll("dot")
         .data(data.filter(function(d) { return d.Time !== 0; }).filter(function(d) { return d.Altitude !== 0; }))
         .enter().append("circle")
-        .attr("r", 0.5)
-        .attr("cx", function(d) { return x(d.Time); })
-        .attr("cy", function(d) { return y(d.Altitude); });
+        .attr("r", 1.5)
+        .attr("cx", function(d) { return xScale(d.Time); })
+        .attr("cy", function(d) { return yScale(d.Altitude); });
+
+        //draw the line
+       svg.append("path")
+		.datum(data)
+		.attr("class","line")
+		.attr("d", valueline);
 
 	// Add the X Axis
 	svg.append("g")		

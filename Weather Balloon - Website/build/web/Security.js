@@ -1,6 +1,3 @@
-/*
- * 
- */
 
 /*This method encodes a string, the password in this program. The method returns a byte array converted to a string.
   This is done so the encoded byte array can be stored in the database as a string. */
@@ -22,7 +19,7 @@ function encode(string) {
   
   //This method decodes the encoded password. It returns the decoded password so the program can verify a users login
   function decode(string){
-  //converts the encoded byte array to a string array    
+  //converts the encoded string array to a byte array    
   array = string.split(",");
   //decodes the password using the same rc4 encryption method and the same secret key
   array = rc4(unobfuscate(x),array);
@@ -45,7 +42,7 @@ function encode(string) {
       //creates an array with 256 elements, this will be the array we xor with our string
       var stream = new Uint8Array(256);
       var encodedByteArray = byteArray;
-      //filling the stream array with integars 
+      //filling the stream array with integers 
       for (var i = 0; i < stream.length; i++) {
           stream[i] = i;
       }
@@ -79,8 +76,8 @@ function encode(string) {
   }
  
 //variables needs to perform obfuscate and unobfucate methods
-var source="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-var target="Q9A8ZWS7XEDC6RFVT5GBY4HNU3J2MI1KO0LP";
+var source="abcdefghijklmnopqrstuvwxyz0123456789";
+var target="9skit8ajv7ruelz6bdm5ocq43nx2wpf1gyh0";
 var x = "Q86XR2MI1K";
 
 //obfuscates a string

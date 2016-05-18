@@ -2,8 +2,8 @@
 function adminLogin(username, password){
    //change username and password - replace with obfuscated strings
    //the admins username and password are obfuscated
-   var x = obfuscate("ADMIN");
-   var y = obfuscate("ADMIN");
+   var x = "atzmkvtlktm";
+   var y = "atza222w";
    //the admins login information is stored in an array
    loginInfo = [x,y];
    

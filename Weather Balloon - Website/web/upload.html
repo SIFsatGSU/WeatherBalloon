@@ -154,7 +154,7 @@ function toExcel(){
 //establishes the uploaded datas filename based on the users input
    var date = $("#datepicker").datepicker("getDate");
    var labDate = $.datepicker.formatDate("mm-dd-yy", date);
-   var fileName = document.getElementById("dataName").value + " - Data taken on: " + labDate;
+   var fileName = document.getElementById("dataName").value + " - Data taken on " + labDate;
 
 //calls the store method from the store_printData.js file to store the data in the database
    store(array,fileName);
@@ -203,6 +203,10 @@ function toExcel(){
         toExcel();
       }
     };
+    
+    //reads the blob as a binary string
+    var blob = file.slice(start, stop + 1);
+    reader.readAsBinaryString(blob);
   }
   
   //adds an event listener on the "Upload File" button
@@ -210,7 +214,9 @@ function toExcel(){
   document.querySelector('.readData').addEventListener('click', function(evt) {
     
     //checks that the user has added a name for their data before reading the uploaded file
-  if(document.getElementById("dataName").value === ""){
+  var date = $("#datepicker").datepicker("getDate");
+  var labDate = $.datepicker.formatDate("mm-dd-yy", date);
+  if(document.getElementById("dataName").value === "" || labDate === ""){
           alert("Naming the data is a required field");
       }  
       //if a file name has been provided, continue with the upload
