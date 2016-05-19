@@ -182,7 +182,7 @@ public final class Output extends javax.swing.JFrame {
     private void saveDataActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveDataActionPerformed
     //each new file will have a unique file name, with the current date and time as part of the file name
     Date date = new Date() ;
-    SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy HH-mm-ss") ;
+    SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy HH-mm-ss");
 
     //name of the file directory
     File theDir = new File("Weather Balloon Data");
